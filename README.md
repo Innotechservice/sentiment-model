@@ -2,6 +2,10 @@
 
 A small sentiment classifier (positive / negative) built from scratch with PyTorch. The trained model is served by a FastAPI service and used by a Streamlit web interface.
 
+## Live demo
+
+https://innotechservice.streamlit.app (the app sleeps after 12 hours without visitors, the first visit afterwards may take a moment)
+
 ## Results
 
 - Model: embedding + mean pooling + small feed-forward network (about 1.3 million parameters), no pretrained weights
@@ -64,3 +68,4 @@ POST /predict with JSON {"text": "This movie was great"} returns label ("musbet"
 SentimentLSTM is also included. On CPU it was too slow (about 50 minutes per epoch) and reached only about 59% validation accuracy after one epoch, so SentimentBag is the model in use. Training the LSTM on a GPU is a possible next step.
 
 Planned: an Azerbaijani dataset and model.
+
