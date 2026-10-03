@@ -4,5 +4,7 @@ __pycache__/
 .env
 data/raw/
 data/processed/
-models/
+models/*
+!models/bag.pt
+!models/vocab.json
 results.txt
