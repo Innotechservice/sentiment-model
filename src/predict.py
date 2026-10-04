@@ -1,3 +1,4 @@
+import re
 import sys
 
 import torch
@@ -8,17 +9,36 @@ from vocab import MAX_LEN, MODELS_DIR, VOCAB_PATH, encode, load_vocab, tokenize
 
 LABELS = {0: "menfi", 1: "musbet"}
 
-# Her dil ucun: model fayli, lugat fayli ve cumle uzunlugu
+
+def az_clean(text):
+    """az_data.py faylindaki az_clean funksiyasinin suretidir.
+
+    Azerbaycan modeli bu temizleme ile oyredilib. Boyuk I ve i herflerini
+    Azerbaycan qaydasi ile kicildir (Python-un standart lower() funksiyasi
+    boyuk i herfini pozur).
+    """
+    text = str(text)
+    text = text.replace("\u0130", "i").replace("I", "\u0131")
+    text = text.lower()
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"https?://\S+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+# Her dil ucun: model fayli, lugat fayli, cumle uzunlugu ve temizleme funksiyasi
 LANGS = {
     "en": {
         "model": MODELS_DIR / "bag.pt",
         "vocab": VOCAB_PATH,
         "max_len": MAX_LEN,
+        "clean": clean_text,
     },
     "az": {
         "model": MODELS_DIR / "az_bag.pt",
         "vocab": MODELS_DIR / "az_vocab.json",
         "max_len": 64,
+        "clean": az_clean,
     },
 }
 
@@ -35,6 +55,7 @@ class Predictor:
         cfg = LANGS[lang]
         self.lang = lang
         self.max_len = cfg["max_len"]
+        self.clean = cfg["clean"]
         self.word2idx = load_vocab(cfg["vocab"])
         self.model = SentimentBag(vocab_size=len(self.word2idx))
         state = torch.load(cfg["model"], map_location="cpu")
@@ -42,7 +63,7 @@ class Predictor:
         self.model.eval()
 
     def predict(self, text):
-        cleaned = clean_text(text)
+        cleaned = self.clean(text)
         words = tokenize(cleaned)
         known = sum(1 for w in words if w in self.word2idx)
 
@@ -97,4 +118,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
