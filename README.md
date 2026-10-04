@@ -77,11 +77,22 @@ Example for Azerbaijani: {"text": "your sentence", "lang": "az"}
 
 ## Project structure
 
-    api/main.py      FastAPI service (both languages)
-    app/ui.py        Streamlit interface that calls the API
-    app/cloud_ui.py  Streamlit interface that loads the models directly
-    src/dataset.py   download, cleaning and splitting of the English data
-    src/vocab.py     vocabulary, text encoding, PyTorch Dataset
-    src/model.py     model architectures (SentimentBag, SentimentLSTM)
-    src/train.py     training with early stopping
-    src/evaluate.py
+    api/main.py          FastAPI service (both languages)
+    app/ui.py            Streamlit interface that calls the API
+    app/cloud_ui.py      Streamlit interface that loads the models directly
+    src/dataset.py       download, cleaning and splitting of the English data
+    src/vocab.py         vocabulary, text encoding, PyTorch Dataset
+    src/model.py         model architectures (SentimentBag, SentimentLSTM)
+    src/train.py         training with early stopping
+    src/evaluate.py      test-set metrics (English)
+    src/predict.py       prediction for new sentences (en and az)
+    src/az_data.py       preparation of the Azerbaijani data
+    src/az_train.py      training of the Azerbaijani model
+    src/az_evaluate.py   test-set metrics and error samples (Azerbaijani)
+    src/az_inspect.py    inspection of the Azerbaijani data
+
+## Notes
+
+SentimentLSTM is also included. On CPU it was too slow (about 50 minutes per epoch) and reached only about 59% validation accuracy after one epoch, so SentimentBag is the model in use. Training the LSTM on a GPU is a possible next step.
+
+Planned: improve the Azerbaijani model by studying its errors, and add a neutral class.
