@@ -7,4 +7,6 @@ data/processed/
 models/*
 !models/bag.pt
 !models/vocab.json
+!models/az_bag.pt
+!models/az_vocab.json
 results.txt

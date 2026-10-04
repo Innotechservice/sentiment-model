@@ -4,18 +4,40 @@ import torch
 
 from dataset import clean_text
 from model import SentimentBag
-from vocab import MODELS_DIR, VOCAB_PATH, encode, load_vocab, tokenize
+from vocab import MAX_LEN, MODELS_DIR, VOCAB_PATH, encode, load_vocab, tokenize
 
 LABELS = {0: "menfi", 1: "musbet"}
 
+# Her dil ucun: model fayli, lugat fayli ve cumle uzunlugu
+LANGS = {
+    "en": {
+        "model": MODELS_DIR / "bag.pt",
+        "vocab": VOCAB_PATH,
+        "max_len": MAX_LEN,
+    },
+    "az": {
+        "model": MODELS_DIR / "az_bag.pt",
+        "vocab": MODELS_DIR / "az_vocab.json",
+        "max_len": 64,
+    },
+}
+
 
 class Predictor:
-    """Oyredilmis modeli yukleyir ve yeni cumleleri proqnozlasdirir."""
+    """Oyredilmis modeli yukleyir ve yeni cumleleri proqnozlasdirir.
 
-    def __init__(self):
-        self.word2idx = load_vocab(VOCAB_PATH)
+    lang="en" -> ingilis modeli (default), lang="az" -> azerbaycan modeli.
+    """
+
+    def __init__(self, lang="en"):
+        if lang not in LANGS:
+            raise ValueError(f"Namelum dil: {lang}. Mumkun: {list(LANGS)}")
+        cfg = LANGS[lang]
+        self.lang = lang
+        self.max_len = cfg["max_len"]
+        self.word2idx = load_vocab(cfg["vocab"])
         self.model = SentimentBag(vocab_size=len(self.word2idx))
-        state = torch.load(MODELS_DIR / "bag.pt", map_location="cpu")
+        state = torch.load(cfg["model"], map_location="cpu")
         self.model.load_state_dict(state)
         self.model.eval()
 
@@ -24,7 +46,7 @@ class Predictor:
         words = tokenize(cleaned)
         known = sum(1 for w in words if w in self.word2idx)
 
-        ids = encode(cleaned, self.word2idx)
+        ids = encode(cleaned, self.word2idx, self.max_len)
         x = torch.tensor([ids], dtype=torch.long)
         with torch.no_grad():
             probs = torch.softmax(self.model(x), dim=1)[0]
@@ -35,6 +57,7 @@ class Predictor:
             "confidence": float(probs[label]),
             "known_words": known,
             "total_words": len(words),
+            "lang": self.lang,
         }
 
 
@@ -49,15 +72,21 @@ def show(result):
 
 
 def main():
-    predictor = Predictor()
+    args = sys.argv[1:]
+    lang = "en"
+    if len(args) >= 2 and args[0] == "--lang":
+        lang = args[1]
+        args = args[2:]
 
-    # Istifade 1: python src\predict.py "cumle"
-    if len(sys.argv) > 1:
-        show(predictor.predict(" ".join(sys.argv[1:])))
+    predictor = Predictor(lang)
+
+    # Istifade 1: python src\predict.py --lang az "cumle"
+    if args:
+        show(predictor.predict(" ".join(args)))
         return
 
-    # Istifade 2: python src\predict.py  (canli rejim)
-    print("Cumle yazin (cixmaq ucun bos buraxib Enter basin).")
+    # Istifade 2: python src\predict.py --lang az  (canli rejim)
+    print(f"Dil: {lang}. Cumle yazin (cixmaq ucun bos buraxib Enter basin).")
     while True:
         text = input("Cumle: ").strip()
         if not text:
@@ -68,3 +97,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
